@@ -28,15 +28,19 @@ class LinkServiceActor extends Actor with LinkService {
 // this trait defines our service behavior independently from the service actor
 trait LinkService extends HttpService {
 	
+	// MongoDB connection
 	val mongoClient =  MongoClient("localhost", 27017)
 	val db = mongoClient("links")
 	val hashColl = db("hashes")
 	hashColl.ensureIndex(MongoDBObject("hash" -> 1))
+	hashColl.ensureIndex(MongoDBObject("url" -> 1), MongoDBObject("unique" -> true))
+	
+	// Hash generator
 	val hashids = new Hashids("ken.ly.super.secure.salt", 8);
 	
 	val route = {
 		get {
-			path("actions" / "hash") {
+			path("actions" / "hash") { // hash-generation
 				parameter("url") { url =>
 					
 					val hash = hashids.encrypt(java.lang.Math.abs(url.hashCode))
@@ -45,16 +49,20 @@ trait LinkService extends HttpService {
 					doc += "url" -> url
 					doc += "hash" -> hash
 					doc += "count" -> count
-					hashColl.insert(doc)
+					try {
+						hashColl.insert(doc)
+					} catch {
+				    	case e: Exception => {}
+				  	}
 					
 					respondWithMediaType(`application/json`) { 
 						complete {
-							s"""{"originalURL":"${url}","shortenedURL":"ken.ly/${hash}"}"""
+							s"""{"originalURL":"${url}","hash":"${hash}"}"""
 						}
 					}
 				}
 			} ~
-			path("actions" / "stats") {
+			path("actions" / "stats") { // stats
 				parameter("hash") { hash =>
 					
 					val doc = hashColl.findOne(MongoDBObject("hash" -> hash))
@@ -62,7 +70,7 @@ trait LinkService extends HttpService {
 						case Some(doc) =>
 							respondWithMediaType(`application/json`) { 
 								complete {
-									s"""{"shortenedURL":"ken.ly/${hash}","clickCount":"${doc.get("count")}"}"""
+									s"""{"hash":"${hash}","clickCount":"${doc.get("count")}"}"""
 								}
 							}
 						case None =>
@@ -77,7 +85,7 @@ trait LinkService extends HttpService {
 					}
 				}
 			} ~ 
-			path("[\\w\\d]{8,}".r) { hash =>
+			path("[\\w\\d]{8,}".r) { hash => // link processor
 				val doc = hashColl.findOne(MongoDBObject("hash" -> hash))
 				doc match {
 					case Some(doc) =>
