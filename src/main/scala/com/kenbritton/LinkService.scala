@@ -6,10 +6,13 @@ import spray.http._
 import MediaTypes._
 import spray.json._
 import DefaultJsonProtocol._
-import spray.http._
 import HttpMethods._
 import com.mongodb.casbah.Imports._
+import com.mongodb.MongoException
 import HashidsJava._
+import java.net._
+import scala.util.control.Exception._
+import scala.util._
 
 // we don't implement our route structure directly in the service actor because
 // we want to be able to test it independently, without having to spin up an actor
@@ -27,11 +30,16 @@ class LinkServiceActor extends Actor with LinkService {
 
 // this trait defines our service behavior independently from the service actor
 trait LinkService extends HttpService {
+
+	def parseURL(url: String): Try[URL] = Try(new URL(url))
+	def insertDoc(doc: MongoDBObject, coll: MongoCollection): Try[WriteResult] = Try(coll.insert(doc))
 	
 	// MongoDB connection
 	val mongoClient =  MongoClient("localhost", 27017)
 	val db = mongoClient("links")
 	val hashColl = db("hashes")
+	
+	// ensure indexes are in place
 	hashColl.ensureIndex(MongoDBObject("hash" -> 1))
 	hashColl.ensureIndex(MongoDBObject("url" -> 1), MongoDBObject("unique" -> true))
 	
@@ -43,21 +51,27 @@ trait LinkService extends HttpService {
 			path("actions" / "hash") { // hash-generation
 				parameter("url") { url =>
 					
-					val hash = hashids.encrypt(java.lang.Math.abs(url.hashCode))
-					val count = 0: java.lang.Integer
-					val doc = MongoDBObject()
-					doc += "url" -> url
-					doc += "hash" -> hash
-					doc += "count" -> count
-					try {
-						hashColl.insert(doc)
-					} catch {
-				    	case e: Exception => {}
-				  	}
-					
-					respondWithMediaType(`application/json`) { 
-						complete {
-							s"""{"originalURL":"${url}","hash":"${hash}"}"""
+					val parsedURL = parseURL(url).map(_.getProtocol)
+					parsedURL match {
+						case Failure(ex) =>
+							respondWithMediaType(`application/json`) { 
+								complete {
+									s"""{"error":"Invalid URL - ${ex.getMessage}"}"""
+								}
+							}
+						case Success(protocol) => {
+							val hash = hashids.encrypt(java.lang.Math.abs(url.hashCode))
+							val count = 0: java.lang.Integer
+							val doc = MongoDBObject()
+							doc += "url" -> url
+							doc += "hash" -> hash
+							doc += "count" -> count
+							insertDoc(doc, hashColl)
+							respondWithMediaType(`application/json`) { 
+								complete {
+									s"""{"originalURL":"${url}","hash":"${hash}"}"""
+								}
+							}
 						}
 					}
 				}
