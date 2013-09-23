@@ -34,8 +34,8 @@ trait LinkService extends HttpService {
 	def insertDoc(doc: MongoDBObject, coll: MongoCollection): Try[WriteResult] = Try(coll.insert(doc))
 	
 	// MongoDB collection
-	val mongoURI = MongoClientURI(Properties.envOrElse("MONGOLAB_URI", "mongodb://localhost:27017"))
-	val mongoHashCollection =  MongoClient(mongoURI)("links")("hashes")
+	val mongoURI = MongoClientURI(Properties.envOrElse("MONGOLAB_URI", "mongodb://localhost:27017/links"))
+	val mongoHashCollection =  MongoClient(mongoURI)(mongoURI.database.getOrElse(""))("hashes")
 	
 	// ensure Mongo indexes are in place to ensure:
 	// 1. fast lookup
