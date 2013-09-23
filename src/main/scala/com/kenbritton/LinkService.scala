@@ -44,7 +44,7 @@ trait LinkService extends HttpService {
 	mongoHashCollection.ensureIndex(MongoDBObject("url" -> 1), MongoDBObject("unique" -> true))
 	
 	// Hash generator
-	val hashGenerator = new Hashids("ken.ly.super.secure.salt", 5);
+	val hashGenerator = new Hashids("ken.ly.super.secure.salt", 8);
 	
 	// routing tree for requests
 	val route = {
@@ -98,7 +98,7 @@ trait LinkService extends HttpService {
 					}
 				}
 			} ~ 
-			path("[\\w\\d]{5,}".r) { hash => // link processor
+			path("[\\w\\d]{8,}".r) { hash => // link processor
 				val doc = mongoHashCollection.findOne(MongoDBObject("hash" -> hash))
 				doc match {
 					case Some(doc) =>
