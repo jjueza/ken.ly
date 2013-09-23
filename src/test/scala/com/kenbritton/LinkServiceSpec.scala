@@ -6,10 +6,16 @@ import spray.http._
 import StatusCodes._
 import spray.json._
 import DefaultJsonProtocol._
+import org.specs2.specification._
+import com.mongodb.casbah.Imports._
 
 class MyServiceSpec extends Specification with Specs2RouteTest with LinkService {
 	
 	def actorRefFactory = system
+
+	def cleanupDB() : Unit = {
+		MongoClient("localhost", 27017)("links")("hashes").remove(MongoDBObject())
+	}
 
 	"LinkService" should {
 		
@@ -32,6 +38,7 @@ class MyServiceSpec extends Specification with Specs2RouteTest with LinkService 
 				json1 must haveKey("error")
 			}
 		}
+		step(cleanupDB())
 		
 		// Tests for actions/stats
 		
@@ -40,6 +47,25 @@ class MyServiceSpec extends Specification with Specs2RouteTest with LinkService 
 				handled must beFalse
 			}
 		}
+		"return stats for valid hash" in {
+			Get("/actions/hash?url=http://abc.com") ~> route ~> check {
+				val json1 = entityAs[String].asJson.convertTo[Map[String,String]]
+				json1 must haveKey("hash")
+				json1.get("hash") match {
+					case Some(hash) =>
+						Get("/actions/stats?hash="+hash) ~> route ~> check {
+							val json1 = entityAs[String].asJson.convertTo[Map[String,String]]
+							json1 must haveKey("clickCount")
+							val count = json1.get("clickCount").getOrElse("")
+							count mustEqual "0"
+						}
+					case None => {
+						1 mustEqual 2 //can't get here
+					}
+				}
+			}
+		}
+		step(cleanupDB())
 
 		// Un-mapped path testing
 		
@@ -69,5 +95,6 @@ class MyServiceSpec extends Specification with Specs2RouteTest with LinkService 
 				entityAs[String] === "HTTP method not allowed, supported methods: GET"
 			}
 		}
+		step(cleanupDB())
 	}
 }
