@@ -13,13 +13,14 @@ class MyServiceSpec extends Specification with Specs2RouteTest with LinkService 
 	
 	def actorRefFactory = system
 
+	// function to clear out MongoDB
 	def cleanupDB() : Unit = {
 		MongoClient("localhost", 27017)("links")("hashes").remove(MongoDBObject())
 	}
 
 	"LinkService" should {
 		
-		// Tests for actions/hash
+		// Tests for hashing
 
 		"reject hash requests missing required 'url' parameter" in {
 			Get("/actions/hash") ~> route ~> check {
@@ -40,14 +41,14 @@ class MyServiceSpec extends Specification with Specs2RouteTest with LinkService 
 		}
 		step(cleanupDB())
 		
-		// Tests for actions/stats
+		// Tests for stats retrieval
 		
 		"reject stats requests missing required 'hash' parameter" in {
 			Get("/actions/stats") ~> route ~> check {
 				handled must beFalse
 			}
 		}
-		"return stats for valid hash" in {
+		"return a valid stats document for a hash" in {
 			Get("/actions/hash?url=http://abc.com") ~> route ~> check {
 				val json1 = entityAs[String].asJson.convertTo[Map[String,String]]
 				json1 must haveKey("hash")
@@ -61,6 +62,45 @@ class MyServiceSpec extends Specification with Specs2RouteTest with LinkService 
 						}
 					case None => {
 						1 mustEqual 2 //can't get here
+					}
+				}
+			}
+		}
+		"increments the clickCount after sending a redirect for the shortened URL" in {
+			Get("/actions/hash?url=http://abc.com") ~> route ~> check {
+				val json1 = entityAs[String].asJson.convertTo[Map[String,String]]
+				json1 must haveKey("hash")
+				json1.get("hash") match {
+					case Some(hash) =>
+						Get("/"+hash) ~> route ~> check {} //click the link!
+						Get("/actions/stats?hash="+hash) ~> route ~> check {
+							val json1 = entityAs[String].asJson.convertTo[Map[String,String]]
+							json1 must haveKey("clickCount")
+							val count = json1.get("clickCount").getOrElse("")
+							count mustEqual "1"
+						}
+					case None => {
+						1 mustEqual 2 // won't match
+					}
+				}
+			}
+		}
+		step(cleanupDB())
+		
+		// Test for redirection (full circle)
+		
+		"return the correct status code and redirect location from a hash request" in {
+			Get("/actions/hash?url=http://abc.com") ~> route ~> check {
+				val json1 = entityAs[String].asJson.convertTo[Map[String,String]]
+				json1 must haveKey("hash")
+				json1.get("hash") match {
+					case Some(hash) =>
+						Get("/"+hash) ~> route ~> check {
+							status === StatusCodes.TemporaryRedirect
+							header("Location").getOrElse("").toString === "Location: http://abc.com"
+						}
+					case None => {
+						1 mustEqual 2 // won't match
 					}
 				}
 			}
