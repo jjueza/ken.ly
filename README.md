@@ -16,15 +16,10 @@ ken.ly consists of 3 services to help with your link-shortening needs.
 Check out a working version [here](http://powerful-brook-3153.herokuapp.com/actions/hash?url=https://github.com/kbritton/ken.ly).  The ken.ly domain name has not
 yet been registered, so please use your imagination.
 
-### Requirements
+### Required tools
 
-1. [SBT](http://www.scala-sbt.org/release/docs/Getting-Started/Setup.html) command line utility
+1. [SBT](http://www.scala-sbt.org/release/docs/Getting-Started/Setup.html) build utility
 2. [Heroku Toolbelt](https://toolbelt.heroku.com/)
-
-#### Optional
-
-1. [MongoDB](http://docs.mongodb.org/manual/installation/)
-2. A [Heroku account](https://api.heroku.com/signup/devcenter)
 
 ### Usage
 
@@ -44,7 +39,9 @@ sbt clean compile stage
 foreman start
 ```
 
-Deploy to heroku
+### Heroku
+
+Heroku is a cloud platform as a service (PaaS) that supports Scala.  Sign up [here](https://api.heroku.com/signup/devcenter) then follow these steps.
 ```
 heroku login
 sbt clean compile stage
@@ -53,14 +50,13 @@ git push heroku master
 heroku open
 ```
 
-Run with MongoDB
+### MongoDB
 
 The default configuration of ken.ly uses an in-memory data store that is destroyed when the JVM exits.  If you'd
-like the data to stick around longer, you can install MongoDB and use it as the principal data store.  On startup
+like the data to stick around longer, you can install [MongoDB](http://docs.mongodb.org/manual/installation/) and use it as the principal data store.  On startup
 ken.ly looks for an environment variable called `MONGOLAB_URI` and tries to connect to the URI.
 ```
 export MONGOLAB_URI="mongodb://localhost:27017/links"
-foreman start
 ```
 
 If you have the MongoLab add-on configured for your Heroku instance, the `MONGOLAB_URI` environment variable
