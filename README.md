@@ -7,10 +7,10 @@ a very simple link shortening service written in Scala
 
 ken.ly consists of 3 services to help with your link-shortening needs.
 
-| Service  | Endpoint                         | Sample Output                                                          |
-|:---------|:---------------------------------|:-----------------------------------------------------------------------|
-| Hasher   | /action/hash?url=http://your.url | {"originalURL":"https://github.com/kbritton/ken.ly","hash":"x5EBR5pK"} |
-| Stats    | /action/stats?hash=yOuRhAsH      | {"hash":"x5EBR5pK","clickCount":"0"}                                   |
+| Service  | Endpoint                         | Sample Output                                                           |
+|:---------|:---------------------------------|:------------------------------------------------------------------------|
+| Hasher   | /action/hash?url=http://your.url | {"originalURL":"https://github.com/kbritton/ken.ly", "hash":"x5EBR5pK"} |
+| Stats    | /action/stats?hash=yOuRhAsH      | {"hash":"x5EBR5pK", "clickCount":"0"}                                   |
 | Redirect | /yOuRhAsH                        | .. redirects to https://github.com/kbritton/ken.ly                                        |
 
 Check out a working version [here](http://powerful-brook-3153.herokuapp.com/actions/hash?url=https://github.com/kbritton/ken.ly).  The ken.ly domain name has not
@@ -41,7 +41,8 @@ foreman start
 
 ### Heroku
 
-Heroku is a cloud platform as a service (PaaS) that supports Scala.  Sign up [here](https://api.heroku.com/signup/devcenter) then follow these steps.
+Heroku is a cloud platform as a service (PaaS) that supports Scala.  In order to deploy ken.ly to heroku, sign up [here](https://api.heroku.com/signup/devcenter) 
+then follow these steps.
 ```
 heroku login
 sbt clean compile stage
