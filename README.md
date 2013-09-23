@@ -33,12 +33,17 @@ Clone the ken.ly repository
 git clone git@github.com:kbritton/ken.ly.git
 ```
 
+Startup MongoDB
+```
+mongod
+```
+
 Run the tests
 ```
 sbt clean compile test
 ```
 
-Run it locally (check out [http://localhost:5000](http://localhost:5000))
+Run it locally (default location: [http://localhost:5000](http://localhost:5000))
 ```
 sbt clean compile stage
 foreman start
