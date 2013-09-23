@@ -45,40 +45,40 @@ class MyServiceSpec extends Specification with Specs2RouteTest with LinkService 
 			}
 		}
 		"return a valid json document containing stats for a hash" in {
+			
+			//generate a hash
 			Get("/actions/hash?url=http://abc.com") ~> route ~> check {
 				val json1 = entityAs[String].asJson.convertTo[Map[String,String]]
 				json1 must haveKey("hash")
-				json1.get("hash") match {
-					case Some(hash) =>
-						Get("/actions/stats?hash="+hash) ~> route ~> check {
-							val json1 = entityAs[String].asJson.convertTo[Map[String,String]]
-							json1 must haveKey("clickCount")
-							val count = json1.get("clickCount").getOrElse("")
-							count.toInt mustEqual 0
-						}
-					case None => {
-						1 mustEqual 2 //can't get here
-					}
+				val hash = json1.get("hash").get
+				
+				//get the stats
+				Get("/actions/stats?hash="+hash) ~> route ~> check {
+					val json2 = entityAs[String].asJson.convertTo[Map[String,String]]
+					json2 must haveKey("clickCount")
+					val count = json2.get("clickCount").getOrElse("")
+					count.toInt mustEqual 0
 				}
 			}
 		}
 		
 		"increments the clickCount after sending a redirect for the shortened URL" in {
+			
+			//generate a hash
 			Get("/actions/hash?url=http://abc.com") ~> route ~> check {
 				val json1 = entityAs[String].asJson.convertTo[Map[String,String]]
 				json1 must haveKey("hash")
-				json1.get("hash") match {
-					case Some(hash) =>
-						Get("/"+hash) ~> route ~> check {} //click the link!
-						Get("/actions/stats?hash="+hash) ~> route ~> check {
-							val json1 = entityAs[String].asJson.convertTo[Map[String,String]]
-							json1 must haveKey("clickCount")
-							val count = json1.get("clickCount").getOrElse("")
-							count mustEqual "1"
-						}
-					case None => {
-						1 mustEqual 2 // can't get here
-					}
+				val hash = json1.get("hash").get
+				
+				//click the link!
+				Get("/"+hash) ~> route ~> check {}
+					
+				//get the stats
+				Get("/actions/stats?hash="+hash) ~> route ~> check {
+					val json2 = entityAs[String].asJson.convertTo[Map[String,String]]
+					json2 must haveKey("clickCount")
+					val count = json2.get("clickCount").getOrElse("")
+					count.toInt mustEqual 1
 				}
 			}
 		}
@@ -88,18 +88,17 @@ class MyServiceSpec extends Specification with Specs2RouteTest with LinkService 
 		// Test for redirection
 		
 		"return the correct status code and redirect location from a hash request" in {
+			
+			//generate a hash
 			Get("/actions/hash?url=http://abc.com") ~> route ~> check {
 				val json1 = entityAs[String].asJson.convertTo[Map[String,String]]
 				json1 must haveKey("hash")
-				json1.get("hash") match {
-					case Some(hash) =>
-						Get("/"+hash) ~> route ~> check {
-							status === StatusCodes.TemporaryRedirect
-							header("Location").getOrElse("").toString === "Location: http://abc.com"
-						}
-					case None => {
-						1 mustEqual 2 // won't match
-					}
+				val hash = json1.get("hash").get
+
+				//click the link!
+				Get("/"+hash) ~> route ~> check {
+					status === StatusCodes.TemporaryRedirect
+					header("Location").getOrElse("").toString === "Location: http://abc.com"
 				}
 			}
 		}
@@ -108,7 +107,7 @@ class MyServiceSpec extends Specification with Specs2RouteTest with LinkService 
 
 		// Un-mapped path testing
 		
-		"leave GET requests to other paths unhandled" in {
+		"leave GET requests for unknown hashes unhandled" in {
 			Get("/kermit") ~> route ~> check {
 				handled must beFalse
 			}
@@ -134,7 +133,5 @@ class MyServiceSpec extends Specification with Specs2RouteTest with LinkService 
 				entityAs[String] === "HTTP method not allowed, supported methods: GET"
 			}
 		}
-		
-		step(dataStore.clear())
 	}
 }
