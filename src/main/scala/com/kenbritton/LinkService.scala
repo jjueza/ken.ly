@@ -35,9 +35,9 @@ trait LinkService extends HttpService {
 	
 	// MongoDB collection
 	val mongoURI = MongoClientURI(Properties.envOrElse("MONGOLAB_URI", "mongodb://localhost:27017/links"))
-	val mongoHashCollection =  MongoClient(mongoURI)(mongoURI.database.getOrElse(""))("hashes")
+	val mongoHashCollection =  MongoClient(mongoURI)(mongoURI.database.getOrElse("links"))("hashes")
 	
-	// ensure Mongo indexes are in place to ensure:
+	// ensure Mongo indexes are in place for:
 	// 1. fast lookup
 	// 2. single document per URL
 	mongoHashCollection.ensureIndex(MongoDBObject("hash" -> 1))
