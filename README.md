@@ -7,10 +7,11 @@ a very simple link shortening service written in Scala
 
 ken.ly consists of 3 services to help with your link-shortening needs.
 
-| Service | Endpoint |
-| Hasher | /action/hash?url=http://your.url |
-| Stats | /action/stats?hash=yOuRhAsH |
-| Redirect | /yOuRhAsH |
+| Service  | Endpoint                         |
+|:---------|:---------------------------------|
+| Hasher   | /action/hash?url=http://your.url |
+| Stats    | /action/stats?hash=yOuRhAsH      |
+| Redirect | /yOuRhAsH                        |
 
 Check out a working version [here](http://powerful-brook-3153.herokuapp.com/actions/hash?url=https://github.com/kbritton/ken.ly).  The ken.ly domain name has not
 yet been registered, so please use your imagination.
