@@ -81,6 +81,11 @@ class LinkServiceSpec extends Specification with Specs2RouteTest with LinkServic
 				}
 			}
 		}
+		"return a 404 for unknown hashes" in {
+			Get("/actions/stats?hash=yOuRhAsH") ~> route ~> check {
+				status === StatusCodes.NotFound
+			}
+		}
 	}
 	
 	step(dataStore.clear())

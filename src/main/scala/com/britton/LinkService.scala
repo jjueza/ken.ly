@@ -30,7 +30,7 @@ class LinkServiceActor extends Actor with LinkService {
 */
 trait LinkService extends HttpService {
 
-	//attempt to parse a URL (may fail with MalformedURLException)
+	// URL parsing function (may fail with MalformedURLException)
 	def parseURL(url: String): Try[URL] = Try(new URL(url))
 	
 	// Hash generator
