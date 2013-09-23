@@ -1,4 +1,4 @@
-package com.kenbritton
+package com.britton
 
 import org.specs2.mutable.Specification
 import spray.testkit.Specs2RouteTest
@@ -12,11 +12,6 @@ import com.mongodb.casbah.Imports._
 class MyServiceSpec extends Specification with Specs2RouteTest with LinkService {
 	
 	def actorRefFactory = system
-
-	// function to clear out MongoDB
-	def cleanupDB() : Unit = {
-		mongoHashCollection.remove(MongoDBObject())
-	}
 
 	"LinkService" should {
 		
@@ -39,7 +34,8 @@ class MyServiceSpec extends Specification with Specs2RouteTest with LinkService 
 				json1 must haveKey("error")
 			}
 		}
-		step(cleanupDB())
+		
+		step(dataStore.clear())
 		
 		// Tests for statistics
 		
@@ -66,6 +62,7 @@ class MyServiceSpec extends Specification with Specs2RouteTest with LinkService 
 				}
 			}
 		}
+		
 		"increments the clickCount after sending a redirect for the shortened URL" in {
 			Get("/actions/hash?url=http://abc.com") ~> route ~> check {
 				val json1 = entityAs[String].asJson.convertTo[Map[String,String]]
@@ -85,7 +82,8 @@ class MyServiceSpec extends Specification with Specs2RouteTest with LinkService 
 				}
 			}
 		}
-		step(cleanupDB())
+		
+		step(dataStore.clear())
 		
 		// Test for redirection
 		
@@ -105,7 +103,8 @@ class MyServiceSpec extends Specification with Specs2RouteTest with LinkService 
 				}
 			}
 		}
-		step(cleanupDB())
+		
+		step(dataStore.clear())
 
 		// Un-mapped path testing
 		
@@ -135,6 +134,7 @@ class MyServiceSpec extends Specification with Specs2RouteTest with LinkService 
 				entityAs[String] === "HTTP method not allowed, supported methods: GET"
 			}
 		}
-		step(cleanupDB())
+		
+		step(dataStore.clear())
 	}
 }

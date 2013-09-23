@@ -1,1 +1,1 @@
-web: target/start Boot
+web: target/start Bootstrap

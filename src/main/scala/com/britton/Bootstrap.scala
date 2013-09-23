@@ -1,11 +1,14 @@
-package com.kenbritton
+package com.britton
 
 import akka.actor.{ActorSystem, Props}
 import akka.io.IO
 import spray.can.Http
 import util.Properties
 
-object Boot extends App {
+/**
+	Main entry point for our application.
+*/
+object Bootstrap extends App {
 	
 	// we need an ActorSystem to host our application in
 	implicit val system = ActorSystem("on-spray-can")
