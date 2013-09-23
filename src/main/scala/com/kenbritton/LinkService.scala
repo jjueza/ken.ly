@@ -14,38 +14,38 @@ import java.net._
 import scala.util.control.Exception._
 import scala.util._
 
-// we don't implement our route structure directly in the service actor because
-// we want to be able to test it independently, without having to spin up an actor
 class LinkServiceActor extends Actor with LinkService {
 
-  // the HttpService trait defines only one abstract member, which
-  // connects the services environment to the enclosing actor or test
-  def actorRefFactory = context
+	def actorRefFactory = context
 
-  // this actor only runs our route, but you could add
-  // other things here, like request stream processing
-  // or timeout handling
-  def receive = runRoute(route)
+	// this actor only runs our route, but you could add
+	// other things here, like request stream processing
+	// or timeout handling
+	def receive = runRoute(route)
 }
 
 // this trait defines our service behavior independently from the service actor
 trait LinkService extends HttpService {
 
+	//attempt to parse a URL (may fail with MalformedURLException)
 	def parseURL(url: String): Try[URL] = Try(new URL(url))
+	
+	//attempt to insert a document to Mongo (may fail with MongoException.DuplicateKey)
 	def insertDoc(doc: MongoDBObject, coll: MongoCollection): Try[WriteResult] = Try(coll.insert(doc))
 	
-	// MongoDB connection
-	val mongoClient =  MongoClient("localhost", 27017)
-	val db = mongoClient("links")
-	val hashColl = db("hashes")
+	// MongoDB collection
+	val hashColl =  MongoClient("localhost", 27017)("links")("hashes")
 	
-	// ensure indexes are in place
+	// ensure Mongo indexes are in place to ensure:
+	// 1. fast lookup
+	// 2. single document per URL
 	hashColl.ensureIndex(MongoDBObject("hash" -> 1))
 	hashColl.ensureIndex(MongoDBObject("url" -> 1), MongoDBObject("unique" -> true))
 	
 	// Hash generator
 	val hashids = new Hashids("ken.ly.super.secure.salt", 8);
 	
+	// routing tree for requests
 	val route = {
 		get {
 			path("actions" / "hash") { // hash-generation

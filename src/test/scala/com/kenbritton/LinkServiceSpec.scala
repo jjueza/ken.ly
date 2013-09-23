@@ -41,14 +41,14 @@ class MyServiceSpec extends Specification with Specs2RouteTest with LinkService 
 		}
 		step(cleanupDB())
 		
-		// Tests for stats retrieval
+		// Tests for statistics
 		
 		"reject stats requests missing required 'hash' parameter" in {
 			Get("/actions/stats") ~> route ~> check {
 				handled must beFalse
 			}
 		}
-		"return a valid stats document for a hash" in {
+		"return a valid json document containing stats for a hash" in {
 			Get("/actions/hash?url=http://abc.com") ~> route ~> check {
 				val json1 = entityAs[String].asJson.convertTo[Map[String,String]]
 				json1 must haveKey("hash")
@@ -80,14 +80,14 @@ class MyServiceSpec extends Specification with Specs2RouteTest with LinkService 
 							count mustEqual "1"
 						}
 					case None => {
-						1 mustEqual 2 // won't match
+						1 mustEqual 2 // can't get here
 					}
 				}
 			}
 		}
 		step(cleanupDB())
 		
-		// Test for redirection (full circle)
+		// Test for redirection
 		
 		"return the correct status code and redirect location from a hash request" in {
 			Get("/actions/hash?url=http://abc.com") ~> route ~> check {
