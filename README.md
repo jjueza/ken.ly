@@ -9,8 +9,8 @@ ken.ly consists of 3 services to help with your link-shortening needs.
 
 | Service  | Endpoint                         | Sample Output                                                           |
 |:---------|:---------------------------------|:------------------------------------------------------------------------|
-| Hasher   | /action/hash?url=http://your.url | {"originalURL":"https://github.com/kbritton/ken.ly", "hash":"x5EBR5pK"} |
-| Stats    | /action/stats?hash=yOuRhAsH      | {"hash":"x5EBR5pK", "clickCount":"0"}                                   |
+| Hasher   | /action/hash?url=http://your.url | {"originalURL":"https://github.com/kbritton/ken.ly", "hash":"yOuRhAsH"} |
+| Stats    | /action/stats?hash=yOuRhAsH      | {"hash":"yOuRhAsH", "clickCount":"0"}                                   |
 | Redirect | /yOuRhAsH                        | .. redirects to https://github.com/kbritton/ken.ly                                        |
 
 Check out a working version [here](http://powerful-brook-3153.herokuapp.com/actions/hash?url=https://github.com/kbritton/ken.ly).  The ken.ly domain name has not
