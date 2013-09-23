@@ -9,42 +9,42 @@ import DefaultJsonProtocol._
 import org.specs2.specification._
 import com.mongodb.casbah.Imports._
 
-class MyServiceSpec extends Specification with Specs2RouteTest with LinkService {
+class LinkServiceSpec extends Specification with Specs2RouteTest with LinkService {
 	
 	def actorRefFactory = system
 
-	"LinkService" should {
-		
-		// Tests for hashing
+	"LinkService hash" should {
 
-		"reject hash requests missing required 'url' parameter" in {
+		"reject requests missing required 'url' parameter" in {
 			Get("/actions/hash") ~> route ~> check {
 				handled must beFalse
 			}
 		}
-		"return a hash in a json string for valid URLs" in {
+		"return a hash for valid URLs" in {
 			Get("/actions/hash?url=http://abc.com") ~> route ~> check {
 				val json1 = entityAs[String].asJson.convertTo[Map[String,String]]
 				json1 must haveKey("hash")
 			}
 		}
-		"return an error message for requests to hash invalid URLs" in {
+		"return an error message for invalid URLs" in {
 			Get("/actions/hash?url=1234") ~> route ~> check {
 				val json1 = entityAs[String].asJson.convertTo[Map[String,String]]
 				json1 must haveKey("error")
 			}
 		}
 		
-		step(dataStore.clear())
+	}
+	
+	step(dataStore.clear())
+	
+	"LinkService stats" should {
 		
-		// Tests for statistics
-		
-		"reject stats requests missing required 'hash' parameter" in {
+		"reject requests missing required 'hash' parameter" in {
 			Get("/actions/stats") ~> route ~> check {
 				handled must beFalse
 			}
 		}
-		"return a valid json document containing stats for a hash" in {
+		"return a clickCount of 0 for un-clicked links" in {
 			
 			//generate a hash
 			Get("/actions/hash?url=http://abc.com") ~> route ~> check {
@@ -61,8 +61,7 @@ class MyServiceSpec extends Specification with Specs2RouteTest with LinkService 
 				}
 			}
 		}
-		
-		"increments the clickCount after sending a redirect for the shortened URL" in {
+		"return a clickCount of N for N-clicked links" in {
 			
 			//generate a hash
 			Get("/actions/hash?url=http://abc.com") ~> route ~> check {
@@ -82,12 +81,13 @@ class MyServiceSpec extends Specification with Specs2RouteTest with LinkService 
 				}
 			}
 		}
+	}
+	
+	step(dataStore.clear())
 		
-		step(dataStore.clear())
+	"LinkService redirect" should {
 		
-		// Test for redirection
-		
-		"return the correct status code and redirect location from a hash request" in {
+		"return a 301 and a Location header for known hashes" in {
 			
 			//generate a hash
 			Get("/actions/hash?url=http://abc.com") ~> route ~> check {
@@ -97,24 +97,27 @@ class MyServiceSpec extends Specification with Specs2RouteTest with LinkService 
 
 				//click the link!
 				Get("/"+hash) ~> route ~> check {
-					status === StatusCodes.TemporaryRedirect
+					status === StatusCodes.MovedPermanently
 					header("Location").getOrElse("").toString === "Location: http://abc.com"
 				}
 			}
 		}
-		
-		step(dataStore.clear())
+		"return a 404 for unknown hashes" in {
+			Get("/yOuRhAsH") ~> route ~> check {
+				status === StatusCodes.NotFound
+			}
+		}
+	}
+	
+	step(dataStore.clear())
 
-		// Un-mapped path testing
+	"LinkService" should {
 		
-		"leave GET requests for unknown hashes unhandled" in {
+		"leave GET requests for unknown paths unhandled" in {
 			Get("/kermit") ~> route ~> check {
 				handled must beFalse
 			}
 		}
-		
-		// Unsupported http methods testing
-		
 		"return a MethodNotAllowed error for PUT requests to the root path" in {
 			Put() ~> sealRoute(route) ~> check {
 				status === MethodNotAllowed

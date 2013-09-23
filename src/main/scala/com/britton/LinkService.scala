@@ -91,7 +91,7 @@ trait LinkService extends HttpService {
 				doc match {
 					case Some(doc) =>
 						dataStore.incrementClicks(doc)
-						redirect(doc.url, StatusCodes.TemporaryRedirect)
+						redirect(doc.url, StatusCodes.MovedPermanently)
 					case None =>
 						respondWithStatus(StatusCodes.NotFound) {
 							complete {
