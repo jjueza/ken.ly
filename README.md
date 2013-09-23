@@ -7,21 +7,22 @@ a very simple link shortening service written in Scala
 
 ken.ly consists of 3 services to help with your link-shortening needs.
 
-# Hasher 	/action/hash?url=http://your.url
-# Stats 	/action/stats?hash=yOuRhAsH
-# Redirect	/yOuRhAsH
+| Service | Endpoint |
+| Hasher | /action/hash?url=http://your.url |
+| Stats | /action/stats?hash=yOuRhAsH |
+| Redirect | /yOuRhAsH |
 
 Check out a working version [here](http://powerful-brook-3153.herokuapp.com/actions/hash?url=https://github.com/kbritton/ken.ly).  The ken.ly domain name has not
 yet been registered, so please use your imagination.
 
 ## Requirements
 
-# SBT command line utility
-# MongoDB
+1. [SBT](http://www.scala-sbt.org/release/docs/Getting-Started/Setup.html) command line utility
+2. [MongoDB](http://docs.mongodb.org/manual/installation/)
 
 ## Optional
 
-# A [Heroku account](https://api.heroku.com/signup/devcenter)
+1. A [Heroku account](https://api.heroku.com/signup/devcenter)
 
 ## Usage
 
