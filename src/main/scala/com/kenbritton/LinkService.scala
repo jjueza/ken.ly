@@ -34,23 +34,23 @@ trait LinkService extends HttpService {
 	def insertDoc(doc: MongoDBObject, coll: MongoCollection): Try[WriteResult] = Try(coll.insert(doc))
 	
 	// MongoDB collection
-	val hashColl =  MongoClient("localhost", 27017)("links")("hashes")
+	val mongoURI = MongoClientURI(Properties.envOrElse("MONGOLAB_URI", "mongodb://localhost:27017"))
+	val mongoHashCollection =  MongoClient(mongoURI)("links")("hashes")
 	
 	// ensure Mongo indexes are in place to ensure:
 	// 1. fast lookup
 	// 2. single document per URL
-	hashColl.ensureIndex(MongoDBObject("hash" -> 1))
-	hashColl.ensureIndex(MongoDBObject("url" -> 1), MongoDBObject("unique" -> true))
+	mongoHashCollection.ensureIndex(MongoDBObject("hash" -> 1))
+	mongoHashCollection.ensureIndex(MongoDBObject("url" -> 1), MongoDBObject("unique" -> true))
 	
 	// Hash generator
-	val hashids = new Hashids("ken.ly.super.secure.salt", 8);
+	val hashGenerator = new Hashids("ken.ly.super.secure.salt", 8);
 	
 	// routing tree for requests
 	val route = {
 		get {
 			path("actions" / "hash") { // hash-generation
 				parameter("url") { url =>
-					
 					val parsedURL = parseURL(url).map(_.getProtocol)
 					parsedURL match {
 						case Failure(ex) =>
@@ -60,13 +60,13 @@ trait LinkService extends HttpService {
 								}
 							}
 						case Success(protocol) => {
-							val hash = hashids.encrypt(java.lang.Math.abs(url.hashCode))
+							val hash = hashGenerator.encrypt(java.lang.Math.abs(url.hashCode))
 							val count = 0: java.lang.Integer
 							val doc = MongoDBObject()
 							doc += "url" -> url
 							doc += "hash" -> hash
 							doc += "count" -> count
-							insertDoc(doc, hashColl)
+							insertDoc(doc, mongoHashCollection)
 							respondWithMediaType(`application/json`) { 
 								complete {
 									s"""{"originalURL":"${url}","hash":"${hash}"}"""
@@ -78,8 +78,7 @@ trait LinkService extends HttpService {
 			} ~
 			path("actions" / "stats") { // stats
 				parameter("hash") { hash =>
-					
-					val doc = hashColl.findOne(MongoDBObject("hash" -> hash))
+					val doc = mongoHashCollection.findOne(MongoDBObject("hash" -> hash))
 					doc match {
 						case Some(doc) =>
 							respondWithMediaType(`application/json`) { 
@@ -100,10 +99,10 @@ trait LinkService extends HttpService {
 				}
 			} ~ 
 			path("[\\w\\d]{8,}".r) { hash => // link processor
-				val doc = hashColl.findOne(MongoDBObject("hash" -> hash))
+				val doc = mongoHashCollection.findOne(MongoDBObject("hash" -> hash))
 				doc match {
 					case Some(doc) =>
-						hashColl.update(MongoDBObject("hash" -> hash), $inc("count" -> 1))
+						mongoHashCollection.update(MongoDBObject("hash" -> hash), $inc("count" -> 1))
 						redirect(doc.get("url").toString, StatusCodes.TemporaryRedirect)
 					case None =>
 						respondWithStatus(StatusCodes.NotFound) {

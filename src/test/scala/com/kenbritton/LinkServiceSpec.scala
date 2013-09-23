@@ -15,7 +15,7 @@ class MyServiceSpec extends Specification with Specs2RouteTest with LinkService 
 
 	// function to clear out MongoDB
 	def cleanupDB() : Unit = {
-		MongoClient("localhost", 27017)("links")("hashes").remove(MongoDBObject())
+		mongoHashCollection.remove(MongoDBObject())
 	}
 
 	"LinkService" should {
@@ -58,7 +58,7 @@ class MyServiceSpec extends Specification with Specs2RouteTest with LinkService 
 							val json1 = entityAs[String].asJson.convertTo[Map[String,String]]
 							json1 must haveKey("clickCount")
 							val count = json1.get("clickCount").getOrElse("")
-							count mustEqual "0"
+							count.toInt mustEqual 0
 						}
 					case None => {
 						1 mustEqual 2 //can't get here
