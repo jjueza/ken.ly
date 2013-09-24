@@ -1,11 +1,11 @@
 ken.ly
 ======
 
-a very simple link shortening service written in Scala
+a very simple URL shortening service written in Scala
 
 ### What is it?
 
-ken.ly consists of 3 services to help with your link-shortening needs.
+ken.ly consists of 3 services to help with your URL-shortening needs.
 
 | Service  | Endpoint                         | Sample Output                                        |
 |:---------|:---------------------------------|:-----------------------------------------------------|
