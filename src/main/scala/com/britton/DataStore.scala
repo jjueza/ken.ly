@@ -8,6 +8,6 @@ abstract class DataStore {
 	
 	def trackLink(url:String, hash:String, count:Int)
 	def findLink(hash:String) : Option[Link]
-	def incrementClicks(link:Link)
+	def incrementClicks(hash:String)
 	def clear()
 }

@@ -12,6 +12,8 @@ scalaVersion := "2.10.2"
 
 scalacOptions := Seq("-unchecked", "-deprecation", "-encoding", "utf8")
 
+parallelExecution in Test := false
+
 resolvers ++= Seq(
   "spray repo" at "http://repo.spray.io/"
 )

@@ -10,6 +10,7 @@ import org.specs2.specification._
 import com.mongodb.casbah.Imports._
 
 class LinkServiceSpec extends Specification with Specs2RouteTest with LinkService with AfterExample {
+	sequential
 	
 	def actorRefFactory = system
 	
@@ -75,7 +76,7 @@ class LinkServiceSpec extends Specification with Specs2RouteTest with LinkServic
 				
 				//click the link!
 				Get("/"+hash) ~> route ~> check {}
-					
+				
 				//get the stats
 				Get("/actions/stats?hash="+hash) ~> route ~> check {
 					val json2 = entityAs[String].asJson.convertTo[Map[String,String]]

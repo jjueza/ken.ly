@@ -11,14 +11,10 @@ class MongoDataStore(uri:String) extends DataStore with Logging {
 	
 	log.info("Using mongo instance: "+uri)
 	
-	// get a reusable DBCollection from Mongo
+	// get a reusable DBCollection from Mongo & ensure indexes are in place
 	private val mongoURI = MongoClientURI(uri)
 	private val mongoHashCollection =  MongoClient(mongoURI)(mongoURI.database.getOrElse("links"))("hashes")
 	mongoHashCollection.setWriteConcern(WriteConcern.Safe)
-	
-	// ensure Mongo indexes are in place for:
-	// 1. fast lookup
-	// 2. single document per URL
 	mongoHashCollection.ensureIndex(MongoDBObject("hash" -> 1))
 	mongoHashCollection.ensureIndex(MongoDBObject("url" -> 1), MongoDBObject("unique" -> true))
 	
@@ -38,8 +34,7 @@ class MongoDataStore(uri:String) extends DataStore with Logging {
 		}
 	}
 	
-	def incrementClicks(link:Link) =
-		mongoHashCollection.update(MongoDBObject("hash" -> link.hash), $inc("count" -> 1))
+	def incrementClicks(hash:String) = mongoHashCollection.findAndModify(MongoDBObject("hash" -> hash), $inc("count" -> 1))
 		
 	def clear() = mongoHashCollection.remove(MongoDBObject())
 }

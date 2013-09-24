@@ -53,10 +53,10 @@ trait LinkService extends HttpService {
 								}
 							}
 						case Success(protocol) => {
-							val hash = hashGenerator.encrypt(java.lang.Math.abs(url.hashCode))
-							dataStore.trackLink(url, hash, 0)
 							respondWithMediaType(`application/json`) { 
 								complete {
+									val hash = hashGenerator.encrypt(java.lang.Math.abs(url.hashCode))
+									dataStore.trackLink(url, hash, 0)
 									s"""{"originalURL":"${url}","hash":"${hash}"}"""
 								}
 							}
@@ -89,8 +89,8 @@ trait LinkService extends HttpService {
 			path("[\\w\\d]{8,}".r) { hash => // link processor
 				val doc = dataStore.findLink(hash)
 				doc match {
-					case Some(doc) =>
-						dataStore.incrementClicks(doc)
+					case Some(doc) => 
+						dataStore.incrementClicks(doc.hash)
 						redirect(doc.url, StatusCodes.MovedPermanently)
 					case None =>
 						respondWithStatus(StatusCodes.NotFound) {
