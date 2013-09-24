@@ -68,6 +68,15 @@ export MONGOLAB_URI="mongodb://localhost:27017/links"
 If you have the MongoLab add-on configured for your Heroku instance, the `MONGOLAB_URI` environment variable
 will automatically be set for your application.
 
+### Known Issues
+
+1. To be a true actor system, the DataStore classes should probably be actors and LinkService should send messages to them.
+We could use futures to wait for the results to come in like this:
+```
+val future = dataActor ? msg 
+val result = Await.result(future, timeout.duration).asInstanceOf[Link]
+```
+
 ### Credits
 
 Thanks to [peet](https://github.com/peet) for the sweet [hashids](https://github.com/peet/hashids.java) implementation.
