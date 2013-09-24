@@ -9,6 +9,9 @@ import DefaultJsonProtocol._
 import org.specs2.specification._
 import com.mongodb.casbah.Imports._
 
+/**
+	Tests for LinkService
+*/
 class LinkServiceSpec extends Specification with Specs2RouteTest with LinkService with AfterExample {
 	sequential
 	

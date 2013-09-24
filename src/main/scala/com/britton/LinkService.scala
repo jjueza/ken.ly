@@ -18,10 +18,6 @@ import scala.util._
 class LinkServiceActor extends Actor with LinkService {
 
 	def actorRefFactory = context
-
-	// this actor only runs our route, but you could add
-	// other things here, like request stream processing
-	// or timeout handling
 	def receive = runRoute(route)
 }
 
@@ -34,15 +30,23 @@ trait LinkService extends HttpService {
 	def parseURL(url: String): Try[URL] = Try(new URL(url))
 	
 	// Hash generator
+	//   This generator will create hashes of at least 8 characters 
+	//   in a style very similar to bit.ly or owl.ly.  This generator
+	//   will always generate the same hash for the same URL.  If the user
+	//   of this software wished to have unique URLs for every request, we 
+	//   could hash a GUID instead of the original URL
+	//
+	//   Hashids GitHub project: https://github.com/peet/hashids.java
 	val hashGenerator = new Hashids("ken.ly.super.secure.salt", 8);
 	
 	// Persistence
 	val dataStore = DataStoreFactory.getInstance();
 	
-	// routing tree for requests
+	// routing tree for requests. see spray-routing (http://spray.io/documentation/1.1-M8/spray-routing/) 
+	// for more information about the directives used here.
 	val route = {
 		get {
-			path("actions" / "hash") { // hash-generation
+			path("actions" / "hash") {
 				parameter("url") { url =>
 					val parsedURL = parseURL(url).map(_.getProtocol)
 					parsedURL match {
@@ -64,7 +68,7 @@ trait LinkService extends HttpService {
 					}
 				}
 			} ~
-			path("actions" / "stats") { // stats
+			path("actions" / "stats") {
 				parameter("hash") { hash =>
 					val doc = dataStore.findLink(hash)
 					doc match {
@@ -105,6 +109,8 @@ trait LinkService extends HttpService {
 }
 
 // Factory for creating DataStore instances
+//   If the MONGOLAB_URI environment variable has been set, create a MongoDB data-store
+//   otherwise create an in-memory store
 object DataStoreFactory {
 	def getInstance() : DataStore =
 		Properties.envOrNone("MONGOLAB_URI") match {
