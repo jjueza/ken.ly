@@ -21,6 +21,7 @@ yet been registered, so please use your imagination.
 1. [SBT](http://www.scala-sbt.org/release/docs/Getting-Started/Setup.html) build utility
 2. [Heroku Toolbelt](https://toolbelt.heroku.com/)
 3. [JDK 1.6](http://www.oracle.com/technetwork/java/javase/downloads/index.html)
+4. [MongoDB](http://docs.mongodb.org/manual/installation/) \(production use\)
 
 ### Usage
 
@@ -51,6 +52,23 @@ environment variable
 export SBT_OPTS=-XX:MaxPermSize=512m
 ```
 
+### MongoDB
+
+The default configuration of ken.ly uses an in-memory data store that is destroyed when the JVM exits.  If you'd
+like durable data and the ability to horizontally scale, install [MongoDB](http://docs.mongodb.org/manual/installation/).
+On startup ken.ly looks for an environment variable called `MONGOLAB_URI` and tries to connect to the URI.
+```
+export MONGOLAB_URI="mongodb://localhost:27017/links"
+```
+
+On startup, the console log will indicate the type of data store in use
+```
+11:10:50 web.1  | 0 [on-spray-can-akka.actor.default-dispatcher-3] INFO com.britton.MongoDataStore - Using mongo instance: mongodb://localhost:27017/links
+```
+
+If you have the MongoLab add-on configured for your Heroku instance, the `MONGOLAB_URI` environment variable
+will automatically be set for your application.
+
 ### Heroku
 
 Heroku is a cloud platform as a service (PaaS) that supports Scala.  In order to deploy ken.ly to heroku, sign up [here](https://api.heroku.com/signup/devcenter) 
@@ -62,18 +80,6 @@ heroku create
 git push heroku master
 heroku open
 ```
-
-### MongoDB
-
-The default configuration of ken.ly uses an in-memory data store that is destroyed when the JVM exits.  If you'd
-like the data to stick around longer, you can install [MongoDB](http://docs.mongodb.org/manual/installation/) and use it as the principal data store.  On startup
-ken.ly looks for an environment variable called `MONGOLAB_URI` and tries to connect to the URI.
-```
-export MONGOLAB_URI="mongodb://localhost:27017/links"
-```
-
-If you have the MongoLab add-on configured for your Heroku instance, the `MONGOLAB_URI` environment variable
-will automatically be set for your application.
 
 ### Known Issues
 
