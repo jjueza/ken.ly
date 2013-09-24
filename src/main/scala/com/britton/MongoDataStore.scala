@@ -14,6 +14,7 @@ class MongoDataStore(uri:String) extends DataStore with Logging {
 	// get a reusable DBCollection from Mongo
 	private val mongoURI = MongoClientURI(uri)
 	private val mongoHashCollection =  MongoClient(mongoURI)(mongoURI.database.getOrElse("links"))("hashes")
+	mongoHashCollection.setWriteConcern(WriteConcern.Safe)
 	
 	// ensure Mongo indexes are in place for:
 	// 1. fast lookup
