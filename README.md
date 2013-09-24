@@ -79,7 +79,7 @@ will automatically be set for your application.
 To be a true actor system, the DataStore classes should probably be actors and LinkService should send messages to them.
 We could use futures to wait for the results to come in like this:
 ```
-val future = dataActor ? msg 
+val future = dataActor ? msg
 val result = Await.result(future, timeout.duration).asInstanceOf[Link]
 ```
 
