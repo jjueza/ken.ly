@@ -7,9 +7,9 @@ import scala.util._
 /**
 	MongoDB data store.  Contents of this data-store can last as long as you'd like.
 */
-class MongoDataStore(uri:String) extends DataStore {
+class MongoDataStore(uri:String) extends DataStore with Logging {
 	
-	println("Using mongo instance: "+uri)
+	log.info("Using mongo instance: "+uri)
 	
 	// get a reusable DBCollection from Mongo
 	private val mongoURI = MongoClientURI(uri)

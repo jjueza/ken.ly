@@ -3,9 +3,9 @@ package com.britton
 /**
 	In-memory data store.  Contents of this store will be destroyed on JVM exit.
 */
-class MemoryDataStore extends DataStore {
+class MemoryDataStore extends DataStore with Logging {
 	
-	println("Using in-memory data store")
+	log.info("Using in-memory data store")
 	
 	val data = collection.mutable.Map[String,Link]()
 	
