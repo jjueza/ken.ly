@@ -76,16 +76,8 @@ will automatically be set for your application.
 
 ### Known Issues
 
-The InMemoryDataStore is not thread-safe.  Calls to the incrementClicks() are not synchronized so the count value could be
-updated incorrectly.  This could be resolved by making InMemoryDataStore an actor and sending it messages for each of it's
-functions.  LinkService could be updated like this:
-```
-val future = dataActor ? IncrementClick(hash)
-val result = Await.result(future, timeout.duration)
-```
-
-This should not be an issue with MongoDataStore because we are using the atomic findAndModify() function to update the click
-count.
+InMemoryDataStore was created to support single-threaded, single-actor unit testing.  For all other usage, MongoDataStore
+is required.
 
 ### Credits
 
