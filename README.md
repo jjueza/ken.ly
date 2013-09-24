@@ -33,13 +33,13 @@ Run the tests
 sbt clean compile test
 ```
 
-Run it locally (default location: [http://localhost:5000](http://localhost:5000))
+Start it locally (default location: [http://localhost:5000](http://localhost:5000))
 ```
 sbt clean compile stage
 foreman start
 ```
 
-Test it
+Generate some hashes!
 ```
 curl http://localhost:5000/actions/hash?url=http://www.google.com
 ```
