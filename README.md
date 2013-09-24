@@ -39,6 +39,11 @@ sbt clean compile stage
 foreman start
 ```
 
+Test it
+```
+curl http://localhost:5000/actions/hash?url=http://www.google.com
+```
+
 ### Heroku
 
 Heroku is a cloud platform as a service (PaaS) that supports Scala.  In order to deploy ken.ly to heroku, sign up [here](https://api.heroku.com/signup/devcenter) 
