@@ -76,8 +76,8 @@ will automatically be set for your application.
 
 ### Known Issues
 
-InMemoryDataStore was created to support single-threaded, single-actor unit testing.  For all other usage, MongoDataStore
-is required.
+InMemoryDataStore can only support single-threaded, single-actor usage such as simple unit testing.  
+For all other usage scenarios, MongoDataStore is required.
 
 ### Credits
 
