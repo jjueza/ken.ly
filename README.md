@@ -84,7 +84,7 @@ heroku open
 
 ### Known Issues
 
-InMemoryDataStore can only support single-threaded, single-actor usage such as simple unit testing. For all other usage scenarios, MongoDataStore is required.
+`InMemoryDataStore` can only support single-threaded, single-actor usage such as simple unit testing. For all other usage scenarios, `MongoDataStore` is required.
 
 ### Credits
 
