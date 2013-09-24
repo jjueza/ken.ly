@@ -20,6 +20,7 @@ yet been registered, so please use your imagination.
 
 1. [SBT](http://www.scala-sbt.org/release/docs/Getting-Started/Setup.html) build utility
 2. [Heroku Toolbelt](https://toolbelt.heroku.com/)
+3. [JDK 1.6](http://www.oracle.com/technetwork/java/javase/downloads/index.html)
 
 ### Usage
 
