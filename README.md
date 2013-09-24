@@ -76,13 +76,16 @@ will automatically be set for your application.
 
 ### Known Issues
 
-To be a true actor system, the DataStore classes should probably be actors and LinkService should send messages to them.
-We could use futures to wait for the results to come in like this:
+The InMemoryDataStore is not thread-safe.  Calls to the incrementClicks() are not synchronized so the count value could be
+updated incorrectly.  This could be resolved by making InMemoryDataStore an actor and sending it messages for each of it's
+functions.  LinkService could be updated like this:
 ```
-implicit val timeout = Timeout(5 seconds)
-val future = dataActor ? msg
-val result = Await.result(future, timeout.duration).asInstanceOf[Link]
+val future = dataActor ? IncrementClick(hash)
+val result = Await.result(future, timeout.duration)
 ```
+
+This should not be an issue with MongoDataStore because we are using the atomic findAndModify() function to update the click
+count.
 
 ### Credits
 
