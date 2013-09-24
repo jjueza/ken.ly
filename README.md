@@ -44,6 +44,12 @@ Generate some hashes!
 curl http://localhost:5000/actions/hash?url=http://www.google.com
 ```
 
+NOTE If you experience an `java.lang.OutOfMemoryError: PermGen space` error while trying to run SBT, set the following
+environment variable
+```
+export SBT_OPTS=-XX:MaxPermSize=512m
+```
+
 ### Heroku
 
 Heroku is a cloud platform as a service (PaaS) that supports Scala.  In order to deploy ken.ly to heroku, sign up [here](https://api.heroku.com/signup/devcenter) 
