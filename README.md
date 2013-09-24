@@ -1,11 +1,11 @@
 ken.ly
 ======
 
-a very simple link shortening service written in Scala
+a very simple URL shortening service written in Scala
 
 ### What is it?
 
-ken.ly consists of 3 services to help with your link-shortening needs.
+ken.ly consists of 3 services to help with your URL-shortening needs.
 
 | Service  | Endpoint                         | Sample Output                                        |
 |:---------|:---------------------------------|:-----------------------------------------------------|
@@ -42,6 +42,12 @@ foreman start
 Generate some hashes!
 ```
 curl http://localhost:5000/actions/hash?url=http://www.google.com
+```
+
+NOTE If you experience an `java.lang.OutOfMemoryError: PermGen space` error while trying to run SBT, set the following
+environment variable
+```
+export SBT_OPTS=-XX:MaxPermSize=512m
 ```
 
 ### Heroku
