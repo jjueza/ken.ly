@@ -1,6 +1,6 @@
 package com.britton
 
-import org.specs2.mutable.Specification
+import org.specs2.mutable.{Specification, After}
 import spray.testkit.Specs2RouteTest
 import spray.http._
 import StatusCodes._
@@ -9,9 +9,12 @@ import DefaultJsonProtocol._
 import org.specs2.specification._
 import com.mongodb.casbah.Imports._
 
-class LinkServiceSpec extends Specification with Specs2RouteTest with LinkService {
+class LinkServiceSpec extends Specification with Specs2RouteTest with LinkService with AfterExample {
 	
 	def actorRefFactory = system
+	
+	//cleanup the databse after each example
+	def after = dataStore.clear()
 
 	"LinkService hash" should {
 
@@ -20,22 +23,21 @@ class LinkServiceSpec extends Specification with Specs2RouteTest with LinkServic
 				handled must beFalse
 			}
 		}
+		
 		"return a hash for valid URLs" in {
 			Get("/actions/hash?url=http://abc.com") ~> route ~> check {
 				val json1 = entityAs[String].asJson.convertTo[Map[String,String]]
 				json1 must haveKey("hash")
 			}
 		}
+		
 		"return an error message for invalid URLs" in {
 			Get("/actions/hash?url=1234") ~> route ~> check {
 				val json1 = entityAs[String].asJson.convertTo[Map[String,String]]
 				json1 must haveKey("error")
 			}
 		}
-		
 	}
-	
-	step(dataStore.clear())
 	
 	"LinkService stats" should {
 		
@@ -44,6 +46,7 @@ class LinkServiceSpec extends Specification with Specs2RouteTest with LinkServic
 				handled must beFalse
 			}
 		}
+		
 		"return a clickCount of 0 for un-clicked links" in {
 			
 			//generate a hash
@@ -61,6 +64,7 @@ class LinkServiceSpec extends Specification with Specs2RouteTest with LinkServic
 				}
 			}
 		}
+		
 		"return a clickCount of N for N-clicked links" in {
 			
 			//generate a hash
@@ -81,14 +85,13 @@ class LinkServiceSpec extends Specification with Specs2RouteTest with LinkServic
 				}
 			}
 		}
+		
 		"return a 404 for unknown hashes" in {
 			Get("/actions/stats?hash=yOuRhAsH") ~> route ~> check {
 				status === StatusCodes.NotFound
 			}
 		}
 	}
-	
-	step(dataStore.clear())
 		
 	"LinkService redirect" should {
 		
@@ -107,14 +110,13 @@ class LinkServiceSpec extends Specification with Specs2RouteTest with LinkServic
 				}
 			}
 		}
+		
 		"return a 404 for unknown hashes" in {
 			Get("/yOuRhAsH") ~> route ~> check {
 				status === StatusCodes.NotFound
 			}
 		}
 	}
-	
-	step(dataStore.clear())
 
 	"LinkService" should {
 		
@@ -123,18 +125,21 @@ class LinkServiceSpec extends Specification with Specs2RouteTest with LinkServic
 				handled must beFalse
 			}
 		}
+		
 		"return a MethodNotAllowed error for PUT requests to the root path" in {
 			Put() ~> sealRoute(route) ~> check {
 				status === MethodNotAllowed
 				entityAs[String] === "HTTP method not allowed, supported methods: GET"
 			}
 		}
+		
 		"return a MethodNotAllowed error for POST requests to the root path" in {
 			Post() ~> sealRoute(route) ~> check {
 				status === MethodNotAllowed
 				entityAs[String] === "HTTP method not allowed, supported methods: GET"
 			}
 		}
+		
 		"return a MethodNotAllowed error for DELETE requests to the root path" in {
 			Delete() ~> sealRoute(route) ~> check {
 				status === MethodNotAllowed
