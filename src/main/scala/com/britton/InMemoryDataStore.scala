@@ -2,6 +2,9 @@ package com.britton
 
 /**
 	In-memory data store.  Contents of this store will be destroyed on JVM exit.
+	
+	NOTE: This class can only support single-threaded, single-actor usage such as simple testing.
+	For all other usage scenarios, MongoDataStore is required.
 */
 class MemoryDataStore extends DataStore with Logging {
 	
