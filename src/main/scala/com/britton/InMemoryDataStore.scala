@@ -12,18 +12,24 @@ class MemoryDataStore extends DataStore with Logging {
 	
  	private val data = collection.mutable.Map[String,Link]()
 	
-	def trackLink(url:String, hash:String, count:Int) = {
+	def trackLink(url:String, hash:String, count:Int) : Option[Boolean] = {
 		if(!data.contains(hash)) {
 			data.put(hash, new Link(url,hash,count))
 		}
+		Option(true)
 	}
 	
 	def findLink(hash:String) : Option[Link] = data.get(hash)
 	
-	def incrementClicks(hash:String) = {
+	def incrementClicks(hash:String) : Option[Boolean] = {
 		val current = data(hash)
-		data.update(hash, new Link(current.url, hash, current.count+1))
+		val newValue = current.count+1;
+		data.update(hash, new Link(current.url, hash, newValue))
+		Option(true)
 	}
 	
-	def clear() = data.clear()
+	def clear() : Option[Boolean] = {
+		data.clear()
+		Option(true)
+	}
 }

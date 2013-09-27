@@ -19,6 +19,7 @@ class LinkServiceSpec extends Specification with Specs2RouteTest with LinkServic
 	
 	//cleanup the databse after each example
 	def after = dataStore.clear()
+	after match { case _ => None }
 
 	"LinkService hash" should {
 

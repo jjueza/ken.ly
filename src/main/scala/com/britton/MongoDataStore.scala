@@ -18,12 +18,13 @@ class MongoDataStore(uri:String) extends DataStore with Logging {
 	mongoHashCollection.ensureIndex(MongoDBObject("hash" -> 1))
 	mongoHashCollection.ensureIndex(MongoDBObject("url" -> 1), MongoDBObject("unique" -> true))
 	
-	def trackLink(url:String, hash:String, count:Int) = {
+	def trackLink(url:String, hash:String, count:Int) : Option[Boolean] = {
 		val doc = MongoDBObject()
 		doc += "url" -> url
 		doc += "hash" -> hash
 		doc += "count" -> count.asInstanceOf[java.lang.Integer]
 		Try(mongoHashCollection.insert(doc))
+		Option(true)
 	}
 	
 	def findLink(hash:String) : Option[Link] = {
@@ -34,7 +35,13 @@ class MongoDataStore(uri:String) extends DataStore with Logging {
 		}
 	}
 	
-	def incrementClicks(hash:String) = mongoHashCollection.findAndModify(MongoDBObject("hash" -> hash), $inc("count" -> 1))
+	def incrementClicks(hash:String) : Option[Boolean] = {
+		mongoHashCollection.findAndModify(MongoDBObject("hash" -> hash), $inc("count" -> 1))
+		Option(true)
+	}
 		
-	def clear() = mongoHashCollection.remove(MongoDBObject())
+	def clear() : Option[Boolean] = {
+		mongoHashCollection.remove(MongoDBObject())
+		Option(true)
+	}
 }

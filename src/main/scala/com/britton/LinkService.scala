@@ -11,6 +11,9 @@ import HashidsJava._
 import java.net._
 import scala.util.control.Exception._
 import scala.util._
+import akka.actor.{ ActorContext, TypedActor, TypedProps, ActorSystem }
+import scala.concurrent._
+import ExecutionContext.Implicits.global
 
 /**
 	Our akka actor!
@@ -52,16 +55,15 @@ trait LinkService extends HttpService {
 					parsedURL match {
 						case Failure(ex) =>
 							respondWithMediaType(`application/json`) { 
-								complete {
-									s"""{"error":"Invalid URL - ${ex.getMessage}"}"""
-								}
+								complete { s"""{"error":"Invalid URL - ${ex.getMessage}"}""" }
 							}
 						case Success(protocol) => {
-							respondWithMediaType(`application/json`) { 
-								complete {
-									val hash = hashGenerator.encrypt(java.lang.Math.abs(url.hashCode))
-									dataStore.trackLink(url, hash, 0)
-									s"""{"originalURL":"${url}","hash":"${hash}"}"""
+							respondWithMediaType(`application/json`) {								
+								val hash = hashGenerator.encrypt(java.lang.Math.abs(url.hashCode))
+								val option = dataStore.trackLink(url, hash, 0)
+								option match {
+									case Some(result) => complete { s"""{"originalURL":"${url}","hash":"${hash}"}""" }
+									case None => complete { s"""{"error":"Could not save link to database"}""" }
 								}
 							}
 						}
@@ -74,16 +76,12 @@ trait LinkService extends HttpService {
 					doc match {
 						case Some(doc) =>
 							respondWithMediaType(`application/json`) { 
-								complete {
-									s"""{"hash":"${hash}","clickCount":"${doc.count}"}"""
-								}
+								complete { s"""{"hash":"${hash}","clickCount":"${doc.count}"}""" }
 							}
 						case None =>
 							respondWithMediaType(`application/json`) { 
 								respondWithStatus(StatusCodes.NotFound) {
-									complete {
-										s"""{"error":"No stats available for the requested URL"}"""
-									}
+									complete { s"""{"error":"No stats available for the requested URL"}""" }
 								}
 							}
 					
@@ -94,13 +92,14 @@ trait LinkService extends HttpService {
 				val doc = dataStore.findLink(hash)
 				doc match {
 					case Some(doc) => 
-						dataStore.incrementClicks(doc.hash)
-						redirect(doc.url, StatusCodes.MovedPermanently)
+						val option = dataStore.incrementClicks(doc.hash)
+						option match {
+							case Some(result) => redirect(doc.url, StatusCodes.MovedPermanently)
+							case None => complete { s"""{"error":"Could not incrmement count."}""" }
+						}
 					case None =>
 						respondWithStatus(StatusCodes.NotFound) {
-							complete {
-								"The requested URL could not be found"
-							}
+							complete { "The requested URL could not be found" }
 						}
 				}
 			}
@@ -112,9 +111,14 @@ trait LinkService extends HttpService {
 //   If the MONGOLAB_URI environment variable has been set, create a MongoDB data-store
 //   otherwise create an in-memory store
 object DataStoreFactory {
+	
+	val system = ActorSystem("on-spray-can")
+	
 	def getInstance() : DataStore =
 		Properties.envOrNone("MONGOLAB_URI") match {
-			case Some(uri) => new MongoDataStore(uri)
-			case None => new MemoryDataStore
+			case Some(uri) => 
+				TypedActor(system).typedActorOf(TypedProps(classOf[DataStore], new MongoDataStore(uri)), "mongoDataStore")
+			case None => 
+				TypedActor(system).typedActorOf(TypedProps[MemoryDataStore]())
 		}
 }
