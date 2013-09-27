@@ -13,6 +13,7 @@ import scala.util.control.Exception._
 import scala.util._
 import akka.actor.{ ActorContext, TypedActor, TypedProps, ActorSystem }
 import scala.concurrent._
+import scala.concurrent.duration._
 import ExecutionContext.Implicits.global
 
 /**
@@ -45,14 +46,16 @@ trait LinkService extends HttpService {
 	// Persistence
 	val dataStore = DataStoreFactory.getInstance();
 	
+	// time to wait for futures
+	val timeout = Duration(5, SECONDS);
+	
 	// routing tree for requests. see spray-routing (http://spray.io/documentation/1.1-M8/spray-routing/) 
 	// for more information about the directives used here.
 	val route = {
 		get {
 			path("actions" / "hash") {
 				parameter("url") { url =>
-					val parsedURL = parseURL(url).map(_.getProtocol)
-					parsedURL match {
+					parseURL(url).map(_.getProtocol) match {
 						case Failure(ex) =>
 							respondWithMediaType(`application/json`) { 
 								complete { s"""{"error":"Invalid URL - ${ex.getMessage}"}""" }
@@ -60,10 +63,10 @@ trait LinkService extends HttpService {
 						case Success(protocol) => {
 							respondWithMediaType(`application/json`) {								
 								val hash = hashGenerator.encrypt(java.lang.Math.abs(url.hashCode))
-								val option = dataStore.trackLink(url, hash, 0)
-								option match {
-									case Some(result) => complete { s"""{"originalURL":"${url}","hash":"${hash}"}""" }
-									case None => complete { s"""{"error":"Could not save link to database"}""" }
+								val fut = dataStore.trackLink(url, hash, 0)
+								Try(Await.result(fut, timeout)) match {
+									case Success(result) => complete { s"""{"originalURL":"${url}","hash":"${hash}"}""" }
+									case Failure(ex) => complete { s"""{"error":"Could not save link to database:${ex.getMessage}"}""" }
 								}
 							}
 						}
@@ -72,32 +75,33 @@ trait LinkService extends HttpService {
 			} ~
 			path("actions" / "stats") {
 				parameter("hash") { hash =>
-					val doc = dataStore.findLink(hash)
-					doc match {
-						case Some(doc) =>
+					val fut = dataStore.findLink(hash)
+					Try(Await.result(fut, timeout)) match {
+						case Success(doc) => {
 							respondWithMediaType(`application/json`) { 
 								complete { s"""{"hash":"${hash}","clickCount":"${doc.count}"}""" }
 							}
-						case None =>
+						}
+						case Failure(ex) => {
 							respondWithMediaType(`application/json`) { 
 								respondWithStatus(StatusCodes.NotFound) {
 									complete { s"""{"error":"No stats available for the requested URL"}""" }
 								}
 							}
-					
+						}
 					}
 				}
 			} ~ 
 			path("[\\w\\d]{8,}".r) { hash => // link processor
-				val doc = dataStore.findLink(hash)
-				doc match {
-					case Some(doc) => 
-						val option = dataStore.incrementClicks(doc.hash)
-						option match {
-							case Some(result) => redirect(doc.url, StatusCodes.MovedPermanently)
-							case None => complete { s"""{"error":"Could not incrmement count."}""" }
+				val fut = dataStore.findLink(hash)
+			 	Try(Await.result(fut, timeout)) match {
+					case Success(doc) => 
+						val fut = dataStore.incrementClicks(doc.hash)
+						Try(Await.result(fut, timeout)) match {
+							case Success(newCount) => redirect(doc.url, StatusCodes.MovedPermanently)
+							case Failure(ex) => complete { s"""{"error":"Could not increment click count: ${ex.getMessage}"}""" }
 						}
-					case None =>
+					case Failure(ex) =>
 						respondWithStatus(StatusCodes.NotFound) {
 							complete { "The requested URL could not be found" }
 						}

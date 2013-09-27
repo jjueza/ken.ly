@@ -1,5 +1,8 @@
 package com.britton
 
+import scala.concurrent._
+import concurrent.Promise
+
 /**
 	In-memory data store.  Contents of this store will be destroyed on JVM exit.
 	
@@ -12,24 +15,30 @@ class MemoryDataStore extends DataStore with Logging {
 	
  	private val data = collection.mutable.Map[String,Link]()
 	
-	def trackLink(url:String, hash:String, count:Int) : Option[Boolean] = {
+	def trackLink(url:String, hash:String, count:Int) : Future[Boolean] = {
 		if(!data.contains(hash)) {
 			data.put(hash, new Link(url,hash,count))
 		}
-		Option(true)
+		Promise.successful(true).future
 	}
 	
-	def findLink(hash:String) : Option[Link] = data.get(hash)
+	def findLink(hash:String) : Future[Link] = {
+		val opt = data.get(hash)
+		opt match {
+			case Some(obj) => Promise.successful(obj).future
+			case None => Promise.failed(new MissingObjectException()).future
+		}
+	}
 	
-	def incrementClicks(hash:String) : Option[Boolean] = {
+	def incrementClicks(hash:String) : Future[Boolean] = {
 		val current = data(hash)
 		val newValue = current.count+1;
 		data.update(hash, new Link(current.url, hash, newValue))
-		Option(true)
+		Promise.successful(true).future
 	}
 	
-	def clear() : Option[Boolean] = {
+	def clear() : Future[Boolean] = {
 		data.clear()
-		Option(true)
+		Promise.successful(true).future
 	}
 }

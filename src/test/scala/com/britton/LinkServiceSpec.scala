@@ -8,6 +8,8 @@ import spray.json._
 import DefaultJsonProtocol._
 import org.specs2.specification._
 import com.mongodb.casbah.Imports._
+import scala.concurrent._
+import scala.concurrent.duration._
 
 /**
 	Tests for LinkService
@@ -18,8 +20,9 @@ class LinkServiceSpec extends Specification with Specs2RouteTest with LinkServic
 	def actorRefFactory = system
 	
 	//cleanup the databse after each example
-	def after = dataStore.clear()
-	after match { case _ => None }
+	def after = { 
+		Await.result(dataStore.clear(), Duration(5, SECONDS))
+	}
 
 	"LinkService hash" should {
 
