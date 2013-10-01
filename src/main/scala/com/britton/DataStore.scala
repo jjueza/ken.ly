@@ -8,10 +8,10 @@ import scala.concurrent._
 */
 trait DataStore {
 	
-	def trackLink(url:String, hash:String, count:Int) : Future[Boolean]
-	def findLink(hash:String) : Future[Link]
-	def incrementClicks(hash:String) : Future[Boolean]
-	def clear() : Future[Boolean]
+	def saveLink(url:String, hash:String, count:Int) : String
+	def findLink(hash:String) : Option[Link]
+	def incrementClicks(hash:String) : Boolean
+	def clear() : Boolean
 }
 
 class MissingObjectException extends Throwable {}

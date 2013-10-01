@@ -20,9 +20,7 @@ class LinkServiceSpec extends Specification with Specs2RouteTest with LinkServic
 	def actorRefFactory = system
 	
 	//cleanup the databse after each example
-	def after = { 
-		Await.result(dataStore.clear(), Duration(5, SECONDS))
-	}
+	def after = { dataStore.clear() }
 
 	"LinkService hash" should {
 
@@ -38,7 +36,14 @@ class LinkServiceSpec extends Specification with Specs2RouteTest with LinkServic
 				json1 must haveKey("hash")
 			}
 		}
-		
+
+		"return a 400 for invalid URLs" in {
+			Get("/actions/hash?url=1234") ~> route ~> check {
+				val json1 = entityAs[String].asJson.convertTo[Map[String,String]]
+				status === StatusCodes.BadRequest
+			}
+		}		
+
 		"return an error message for invalid URLs" in {
 			Get("/actions/hash?url=1234") ~> route ~> check {
 				val json1 = entityAs[String].asJson.convertTo[Map[String,String]]

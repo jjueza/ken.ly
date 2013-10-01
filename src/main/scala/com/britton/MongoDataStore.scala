@@ -19,32 +19,31 @@ class MongoDataStore(uri:String) extends DataStore with Logging {
 	mongoHashCollection.ensureIndex(MongoDBObject("hash" -> 1))
 	mongoHashCollection.ensureIndex(MongoDBObject("url" -> 1), MongoDBObject("unique" -> true))
 	
-	def trackLink(url:String, hash:String, count:Int) : Future[Boolean] = {
+	def saveLink(url:String, hash:String, count:Int) : String = {
 		val doc = MongoDBObject()
 		doc += "url" -> url
 		doc += "hash" -> hash
 		doc += "count" -> count.asInstanceOf[java.lang.Integer]
 		Try(mongoHashCollection.insert(doc))
-		Promise.successful(true).future
+		hash
 	}
 	
-	def findLink(hash:String) : Future[Link] = {
+	def findLink(hash:String) : Option[Link] = {
 		val found = mongoHashCollection.findOne(MongoDBObject("hash" -> hash))
 		found match {
 			case Some(doc) => 
-				Promise.successful(new Link(doc.get("url").toString, doc.get("hash").toString, doc.get("count").asInstanceOf[Int])).future
-			case None =>
-				Promise.failed(new MissingObjectException()).future
+				Some(new Link(doc.get("url").toString, doc.get("hash").toString, doc.get("count").asInstanceOf[Int]))
+			case None => None
 		}
 	}
 	
-	def incrementClicks(hash:String) : Future[Boolean] = {
+	def incrementClicks(hash:String) : Boolean = {
 		mongoHashCollection.findAndModify(MongoDBObject("hash" -> hash), $inc("count" -> 1))
-		Promise.successful(true).future
+		true
 	}
 		
-	def clear() : Future[Boolean] = {
+	def clear() : Boolean = {
 		mongoHashCollection.remove(MongoDBObject())
-		Promise.successful(true).future
+		true
 	}
 }

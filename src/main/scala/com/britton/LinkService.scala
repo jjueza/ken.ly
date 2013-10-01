@@ -11,7 +11,8 @@ import HashidsJava._
 import java.net._
 import scala.util.control.Exception._
 import scala.util._
-import akka.actor.{ ActorContext, TypedActor, TypedProps, ActorSystem }
+import akka.actor.{ ActorContext, TypedActor, TypedProps, ActorSystem, Props }
+import akka.util.Timeout
 import scala.concurrent._
 import scala.concurrent.duration._
 import ExecutionContext.Implicits.global
@@ -46,68 +47,85 @@ trait LinkService extends HttpService {
 	// Persistence
 	val dataStore = DataStoreFactory.getInstance();
 	
-	// time to wait for futures
-	val timeout = Duration(5, SECONDS);
-	
-	// routing tree for requests. see spray-routing (http://spray.io/documentation/1.1-M8/spray-routing/) 
-	// for more information about the directives used here.
-	val route = {
-		get {
-			path("actions" / "hash") {
-				parameter("url") { url =>
-					parseURL(url).map(_.getProtocol) match {
-						case Failure(ex) =>
-							respondWithMediaType(`application/json`) { 
-								complete { s"""{"error":"Invalid URL - ${ex.getMessage}"}""" }
-							}
-						case Success(protocol) => {
-							respondWithMediaType(`application/json`) {								
-								val hash = hashGenerator.encrypt(java.lang.Math.abs(url.hashCode))
-								val fut = dataStore.trackLink(url, hash, 0)
-								Try(Await.result(fut, timeout)) match {
-									case Success(result) => complete { s"""{"originalURL":"${url}","hash":"${hash}"}""" }
-									case Failure(ex) => complete { s"""{"error":"Could not save link to database:${ex.getMessage}"}""" }
+	val hashingService = path("actions" / "hash") {
+		parameter("url") { url =>
+			respondWithMediaType(`application/json`) {
+				parseURL(url).map(_.getProtocol) match {
+					case Success(protocol) => {							
+						val hash = hashGenerator.encrypt(java.lang.Math.abs(url.hashCode))
+						Try(dataStore.saveLink(url, hash, 0)) match {
+							case Success(result) => 
+								complete { s"""{"originalURL":"${url}","hash":"${hash}"}""" }
+							case Failure(saveException) => 
+								respondWithStatus(StatusCodes.InternalServerError) {
+									complete { s"""{"error":"Could not save link to database: ${saveException.getMessage}"}""" }
 								}
 							}
 						}
-					}
-				}
-			} ~
-			path("actions" / "stats") {
-				parameter("hash") { hash =>
-					val fut = dataStore.findLink(hash)
-					Try(Await.result(fut, timeout)) match {
-						case Success(doc) => {
-							respondWithMediaType(`application/json`) { 
-								complete { s"""{"hash":"${hash}","clickCount":"${doc.count}"}""" }
-							}
-						}
-						case Failure(ex) => {
-							respondWithMediaType(`application/json`) { 
-								respondWithStatus(StatusCodes.NotFound) {
-									complete { s"""{"error":"No stats available for the requested URL"}""" }
-								}
-							}
-						}
-					}
-				}
-			} ~ 
-			path("[\\w\\d]{8,}".r) { hash => // link processor
-				val fut = dataStore.findLink(hash)
-			 	Try(Await.result(fut, timeout)) match {
-					case Success(doc) => 
-						val fut = dataStore.incrementClicks(doc.hash)
-						Try(Await.result(fut, timeout)) match {
-							case Success(newCount) => redirect(doc.url, StatusCodes.MovedPermanently)
-							case Failure(ex) => complete { s"""{"error":"Could not increment click count: ${ex.getMessage}"}""" }
-						}
-					case Failure(ex) =>
-						respondWithStatus(StatusCodes.NotFound) {
-							complete { "The requested URL could not be found" }
+					case Failure(urlException) =>
+						respondWithStatus(StatusCodes.BadRequest) {
+							complete { s"""{"error":"Invalid URL - ${urlException.getMessage}"}""" }
 						}
 				}
 			}
 		}
+	}
+	
+	val statsService = path("actions" / "stats") {
+		parameter("hash") { hash =>
+			respondWithMediaType(`application/json`) { 
+				Try(dataStore.findLink(hash)) match {
+					case Success(option) => {
+						option match {
+							case Some(doc) =>
+								complete { s"""{"hash":"${hash}","clickCount":"${doc.count}"}""" }
+							case None => 
+								respondWithStatus(StatusCodes.NotFound) {
+									complete { s"""{"error":"No stats available for the requested URL"}""" }
+								}
+						}
+					}
+					case Failure(findException) => {
+						respondWithStatus(StatusCodes.InternalServerError) {
+							complete { s"""{"error":"Could not find link: ${findException.getMessage}"}""" }
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	val redirectService = path("[\\w\\d]{8,}".r) { hash =>
+	 	Try(dataStore.findLink(hash)) match {
+			case Success(option) => 
+				option match {
+					case Some(doc) =>
+						Try(dataStore.incrementClicks(doc.hash)) match {
+							case Success(newCount) => 
+								redirect(doc.url, StatusCodes.MovedPermanently)
+							case Failure(incException) => 
+								respondWithStatus(StatusCodes.InternalServerError) {
+									complete { s"""{"error":"Could not increment click count: ${incException.getMessage}"}""" }
+								}
+						}
+					case None =>
+						respondWithStatus(StatusCodes.NotFound) {
+							complete { s"""{"error":"Link not found"}""" }
+						}
+				}
+			case Failure(findException) =>
+				respondWithStatus(StatusCodes.InternalServerError) {
+					complete { s"""{"error":"Could not find link: ${findException.getMessage}"}""" }
+				}
+		}
+	}
+	
+	// routing tree for requests. see spray-routing (http://spray.io/documentation/1.1-M8/spray-routing/) 
+	// for more information about the directives used here.
+	val route = { 
+		get { 
+			hashingService ~ statsService ~ redirectService 
+		} 
 	}
 }
 
@@ -121,8 +139,10 @@ object DataStoreFactory {
 	def getInstance() : DataStore =
 		Properties.envOrNone("MONGOLAB_URI") match {
 			case Some(uri) => 
-				TypedActor(system).typedActorOf(TypedProps(classOf[DataStore], new MongoDataStore(uri)), "mongoDataStore")
+				val props = TypedProps(classOf[DataStore], new MongoDataStore(uri)).withTimeout(Timeout(5, SECONDS))
+				TypedActor(system).typedActorOf(props, "mongoDataStore")
 			case None => 
-				TypedActor(system).typedActorOf(TypedProps[MemoryDataStore]())
+				val props = TypedProps[MemoryDataStore]().withTimeout(Timeout(5, SECONDS))
+				TypedActor(system).typedActorOf(props)
 		}
 }
